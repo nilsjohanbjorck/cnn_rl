@@ -24,6 +24,7 @@ from video import TrainVideoRecorder, VideoRecorder
 
 torch.backends.cudnn.benchmark = True
 
+from git_ctx import log_basics
 
 def make_agent(obs_spec, action_spec, cfg):
     cfg.obs_shape = obs_spec.shape
@@ -206,6 +207,7 @@ class Workspace:
 
 @hydra.main(config_path='cfgs', config_name='config')
 def main(cfg):
+    log_basics()
     from train import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
