@@ -126,6 +126,15 @@ class TruncatedNormal(pyd.Normal):
         return self._clamp(x)
 
 
+class EmbedNorm(nn.Module):
+    def __init__(self, eps=1e-10):
+        super().__init__()
+        self.eps = eps
+    def forward(self, x):
+        assert len(x.shape) == 2
+        return F.normalize(x, dim=1, eps=self.eps)
+
+
 def schedule(schdl, step):
     try:
         return float(schdl)

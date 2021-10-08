@@ -89,18 +89,21 @@ class EncoderStrided(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim):
+    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm):
         super().__init__()
 
         self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
                                    nn.LayerNorm(feature_dim), nn.Tanh())
 
-        self.policy = nn.Sequential(nn.Linear(feature_dim, hidden_dim),
+        policy = [nn.Linear(feature_dim, hidden_dim),
                                     nn.ReLU(inplace=True),
                                     nn.Linear(hidden_dim, hidden_dim),
-                                    nn.ReLU(inplace=True),
-                                    nn.Linear(hidden_dim, action_shape[0]))
+                                    nn.ReLU(inplace=True)]
+        if embnorm:
+             policy += [utils.EmbedNorm()]
+        policy += [nn.Linear(hidden_dim, action_shape[0])]
 
+        self.policy = nn.Sequential(*policy)
         self.apply(utils.weight_init)
 
     def forward(self, obs, std):
@@ -115,21 +118,31 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim):
+    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm):
         super().__init__()
 
         self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
                                    nn.LayerNorm(feature_dim), nn.Tanh())
 
-        self.Q1 = nn.Sequential(
+        Q1 = [
             nn.Linear(feature_dim + action_shape[0], hidden_dim),
             nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+            nn.ReLU(inplace=True)]
+        if embnorm:
+             Q1 += [utils.EmbedNorm()]
+        Q1 += [nn.Linear(hidden_dim, 1)]
+        self.Q1 = nn.Sequential(*Q1)
 
-        self.Q2 = nn.Sequential(
+
+        Q2 = [
             nn.Linear(feature_dim + action_shape[0], hidden_dim),
             nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+            nn.ReLU(inplace=True)]
+        if embnorm:
+             Q2 += [utils.EmbedNorm()]
+        Q2 += [nn.Linear(hidden_dim, 1)]
+        self.Q2 = nn.Sequential(*Q2)
+
 
         self.apply(utils.weight_init)
 
@@ -145,7 +158,7 @@ class Critic(nn.Module):
 class DrQV2Agent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps,
-                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder):
+                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm):
         self.device = device
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
@@ -156,15 +169,18 @@ class DrQV2Agent:
 
         # models
         self.encoder = EncoderStrided(obs_shape).to(device) if strided_encoder else Encoder(obs_shape).to(device)
-        print(self.encoder)
         self.actor = Actor(self.encoder.repr_dim, action_shape, feature_dim,
-                           hidden_dim).to(device)
-
+                           hidden_dim, embnorm).to(device)
         self.critic = Critic(self.encoder.repr_dim, action_shape, feature_dim,
-                             hidden_dim).to(device)
+                             hidden_dim, embnorm).to(device)
         self.critic_target = Critic(self.encoder.repr_dim, action_shape,
-                                    feature_dim, hidden_dim).to(device)
+                                    feature_dim, hidden_dim, embnorm).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
+
+
+        print(self.encoder)
+        print(self.actor)
+        print(self.critic)
 
         # optimizers
         self.encoder_opt = torch.optim.Adam(self.encoder.parameters(), lr=lr)

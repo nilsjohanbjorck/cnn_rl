@@ -50,6 +50,8 @@ agent:
   stddev_schedule: ${stddev_schedule}
   stddev_clip: 0.3
   strided_encoder: false
+  embnorm: false
+
 
 hydra:
   run:
