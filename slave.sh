@@ -63,9 +63,9 @@ do
 echo $idx
 seed=$(python seeds/seeds.py --index $ex_idx)
 task=${med_tasks[$idx]}
-dirname="runs2/7thOctober_stridedencoder/task_"$task"_idx_"$ex_idx"_seed_"$seed
+dirname="runs2/8thOctober_stridedencoder/task_"$task"_idx_"$ex_idx"_seed_"$seed
 echo "running:" $dirname  $gpu 
-export CUDA_VISIBLE_DEVICES=$gpu; python train.py task=$task seed=$seed hydra.run.dir=$dirname agent.strided_encoder=True 
+export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=$task seed=$seed hydra.run.dir=$dirname agent.strided_encoder=True 
 done
 
 

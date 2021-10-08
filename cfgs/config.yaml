@@ -1,7 +1,11 @@
 defaults:
   - _self_
-  - task@_global_: quadruped_walk
   - override hydra/launcher: submitit_local
+
+
+num_train_frames: 1100000
+stddev_schedule: 'linear(1.0,0.1,500000)'
+task_name: quadruped_walk
 
 # task settings
 frame_stack: 3

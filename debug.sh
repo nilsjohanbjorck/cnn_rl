@@ -31,7 +31,7 @@ task='walker_walk'
 
 
 gpu=1
-export CUDA_VISIBLE_DEVICES=$gpu; python train.py task=$task agent.strided_encoder=True 
+export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=$task agent.strided_encoder=True 
 
 
 
