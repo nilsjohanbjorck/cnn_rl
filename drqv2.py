@@ -88,6 +88,29 @@ class EncoderStrided(nn.Module):
         return x
 
 
+
+class EncoderDreamer(nn.Module):
+    def __init__(self, obs_shape):
+        super().__init__()
+        assert len(obs_shape) == 3
+        self.repr_dim = 384 * 3 * 3
+        self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 48, 4, stride=2),
+                                     nn.ReLU(), nn.Conv2d(48, 96, 4, stride=2),
+                                     nn.ReLU(), nn.Conv2d(96, 192, 4, stride=2),
+                                     nn.ReLU(), nn.Conv2d(192, 384, 4, stride=2),
+                                     nn.ReLU())
+        self.apply(utils.weight_init)
+
+    def forward(self, obs):
+        obs = obs / 255.0 - 0.5
+        x = self.convnet(obs)
+        x = x.view(x.shape[0], -1)
+        return x
+
+
+
+
+
 class Actor(nn.Module):
     def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm):
         super().__init__()
@@ -158,7 +181,7 @@ class Critic(nn.Module):
 class DrQV2Agent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps,
-                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm):
+                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm, dreamer_encoder):
         self.device = device
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
@@ -168,7 +191,14 @@ class DrQV2Agent:
         self.stddev_clip = stddev_clip
 
         # models
-        self.encoder = EncoderStrided(obs_shape).to(device) if strided_encoder else Encoder(obs_shape).to(device)
+        if dreamer_encoder:
+            self.encoder = EncoderDreamer(obs_shape).to(device)
+        elif strided_encoder:
+            self.encoder = EncoderStrided(obs_shape).to(device)
+        else:
+            self.encoder = Encoder(obs_shape).to(device)
+
+
         self.actor = Actor(self.encoder.repr_dim, action_shape, feature_dim,
                            hidden_dim, embnorm).to(device)
         self.critic = Critic(self.encoder.repr_dim, action_shape, feature_dim,

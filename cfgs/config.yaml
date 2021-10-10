@@ -3,7 +3,7 @@ defaults:
   - override hydra/launcher: submitit_local
 
 
-num_train_frames: 1100000
+num_train_frames: 1010000
 stddev_schedule: 'linear(1.0,0.1,500000)'
 task_name: quadruped_walk
 
@@ -51,7 +51,7 @@ agent:
   stddev_clip: 0.3
   strided_encoder: false
   embnorm: false
-
+  dreamer_encoder: false
 
 hydra:
   run:
