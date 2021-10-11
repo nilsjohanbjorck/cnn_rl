@@ -128,9 +128,12 @@ class Actor(nn.Module):
 
         self.policy = nn.Sequential(*policy)
         self.apply(utils.weight_init)
+        self.share_trunk = False
 
     def forward(self, obs, std):
         h = self.trunk(obs)
+        if self.share_trunk:
+            h = h.detach()
 
         mu = self.policy(h)
         mu = torch.tanh(mu)
@@ -181,7 +184,7 @@ class Critic(nn.Module):
 class DrQV2Agent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps,
-                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm, dreamer_encoder):
+                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm, dreamer_encoder, share_trunk):
         self.device = device
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
@@ -211,6 +214,11 @@ class DrQV2Agent:
         print(self.encoder)
         print(self.actor)
         print(self.critic)
+
+        if share_trunk:
+            self.actor.trunk = self.critic.trunk
+            self.actor.share_trunk = True
+
 
         # optimizers
         self.encoder_opt = torch.optim.Adam(self.encoder.parameters(), lr=lr)

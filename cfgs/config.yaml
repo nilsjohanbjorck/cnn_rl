@@ -52,6 +52,7 @@ agent:
   strided_encoder: false
   embnorm: false
   dreamer_encoder: false
+  share_trunk: false
 
 hydra:
   run:
