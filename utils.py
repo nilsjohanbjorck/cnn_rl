@@ -135,6 +135,37 @@ class EmbedNorm(nn.Module):
         return F.normalize(x, dim=1, eps=self.eps)
 
 
+class PositionwiseFeedForward(nn.Module):
+    def __init__(self, size, dropout):
+        super().__init__()
+        self.w_1 = nn.Linear(size, size*2)
+        self.w_2 = nn.Linear(size*2, size)
+        self.dropout = nn.Dropout(dropout)
+        self.ln = nn.LayerNorm(size)
+    def forward(self, x):
+        xnorm = self.ln(x)
+        h = self.w_2(self.dropout(F.relu(self.w_1(xnorm))))
+        return x + self.dropout(h)
+
+
+def transformer_mlp(input_dim, hidden_dim, output_dim, hidden_depth, dropout, embnorm):
+    if hidden_depth == 0:
+        mods = [nn.Linear(input_dim, output_dim)]
+    else:
+        mods = []
+        mods += [nn.Linear(input_dim, hidden_dim)]
+        mods += [nn.ReLU(inplace=True)]
+        for i in range(hidden_depth - 1):
+            mods += [PositionwiseFeedForward(hidden_dim, dropout)]
+        if embnorm:
+            mods += [EmbedNorm()]
+        mods.append(nn.Linear(hidden_dim, output_dim))
+    trunk = nn.Sequential(*mods)
+    return trunk
+
+
+
+
 def schedule(schdl, step):
     try:
         return float(schdl)

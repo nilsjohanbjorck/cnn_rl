@@ -1,11 +1,12 @@
 defaults:
   - _self_
+  - task@_global_: humanoid_walk
   - override hydra/launcher: submitit_local
 
 
-num_train_frames: 1010000
-stddev_schedule: 'linear(1.0,0.1,500000)'
-task_name: quadruped_walk
+#num_train_frames: 1010000
+#stddev_schedule: 'linear(1.0,0.1,500000)'
+#task_name: quadruped_walk
 
 # task settings
 frame_stack: 3
@@ -18,6 +19,7 @@ eval_every_frames: 10000
 num_eval_episodes: 10
 # snapshot
 save_snapshot: false
+save_at: [5000, 500000, 750000, 1000000]
 # replay buffer
 replay_buffer_size: 1000000
 replay_buffer_num_workers: 4
@@ -26,7 +28,7 @@ batch_size: 256
 # misc
 seed: 1
 device: cuda
-save_video: false
+save_video: true
 save_train_video: false
 use_tb: true
 # experiment
@@ -53,6 +55,8 @@ agent:
   embnorm: false
   dreamer_encoder: false
   share_trunk: false
+  use_transformer: false
+
 
 hydra:
   run:

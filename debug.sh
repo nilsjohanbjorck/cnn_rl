@@ -26,12 +26,11 @@ fi
 export MUJOCO_LICENSE_PATH=$HOME/.mujoco/mjkey_tmp_free.txt
 export MJKEY_PATH=$HOME/.mujoco/mjkey_tmp_free.txt
 
-pt='/home/fs01/njb225/qnorm/runs/17thSeptember_baseline/task_hopper_hop_idx_16_seed_1868827220/snapshot_250000.pt'
 task='walker_walk'
 
 
 gpu=1
-export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=$task agent.strided_encoder=True agent.embnorm=True 
+export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=$task save_snapshot=True 
 
 
 

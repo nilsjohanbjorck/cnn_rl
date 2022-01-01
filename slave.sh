@@ -58,14 +58,16 @@ declare -A med_tasks=(
 
 idxs=('9' '12' '5' '1')
 
+idxs=('9')
 for idx in ${idxs[@]};
 do
 echo $idx
 seed=$(python seeds/seeds.py --index $ex_idx)
 task=${med_tasks[$idx]}
-dirname="runs2/8thOctober_stridedencoder/task_"$task"_idx_"$ex_idx"_seed_"$seed
+task=humanoid_walk
+dirname="runs2/11thOctober_qnorm_humanoid/task_"$task"_idx_"$ex_idx"_seed_"$seed
 echo "running:" $dirname  $gpu 
-export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=$task seed=$seed hydra.run.dir=$dirname agent.strided_encoder=True 
+export CUDA_VISIBLE_DEVICES=$gpu; python train.py task_name=humanoid_walk seed=$seed hydra.run.dir=$dirname agent.embnorm=True 
 done
 
 

@@ -112,7 +112,7 @@ class EncoderDreamer(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm):
+    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm, use_transformers):
         super().__init__()
 
         self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
@@ -127,6 +127,10 @@ class Actor(nn.Module):
         policy += [nn.Linear(hidden_dim, action_shape[0])]
 
         self.policy = nn.Sequential(*policy)
+
+        if use_transformers:
+            self.policy = utils.transformer_mlp(feature_dim, hidden_dim, action_shape[0], 3, 0.0, embnorm)
+
         self.apply(utils.weight_init)
         self.share_trunk = False
 
@@ -144,7 +148,7 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm):
+    def __init__(self, repr_dim, action_shape, feature_dim, hidden_dim, embnorm, use_transformer):
         super().__init__()
 
         self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
@@ -169,8 +173,16 @@ class Critic(nn.Module):
         Q2 += [nn.Linear(hidden_dim, 1)]
         self.Q2 = nn.Sequential(*Q2)
 
+        if use_transformer:
+            self.use_transformers(feature_dim, action_shape, hidden_dim, embnorm)
 
         self.apply(utils.weight_init)
+
+
+
+    def use_transformers(self, feature_dim, action_shape, hidden_dim, embnorm):
+        self.Q1 = utils.transformer_mlp(feature_dim + action_shape[0], hidden_dim, 1, 3, 0.0, embnorm)
+        self.Q2 = utils.transformer_mlp(feature_dim + action_shape[0], hidden_dim, 1, 3, 0.0, embnorm)
 
     def forward(self, obs, action):
         h = self.trunk(obs)
@@ -184,7 +196,8 @@ class Critic(nn.Module):
 class DrQV2Agent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps,
-                 update_every_steps, stddev_schedule, stddev_clip, use_tb, strided_encoder, embnorm, dreamer_encoder, share_trunk):
+                 update_every_steps, stddev_schedule, stddev_clip, use_tb, 
+		 strided_encoder, embnorm, dreamer_encoder, share_trunk, use_transformer):
         self.device = device
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
@@ -203,11 +216,11 @@ class DrQV2Agent:
 
 
         self.actor = Actor(self.encoder.repr_dim, action_shape, feature_dim,
-                           hidden_dim, embnorm).to(device)
+                           hidden_dim, embnorm, use_transformer).to(device)
         self.critic = Critic(self.encoder.repr_dim, action_shape, feature_dim,
-                             hidden_dim, embnorm).to(device)
+                             hidden_dim, embnorm, use_transformer).to(device)
         self.critic_target = Critic(self.encoder.repr_dim, action_shape,
-                                    feature_dim, hidden_dim, embnorm).to(device)
+                                    feature_dim, hidden_dim, embnorm, use_transformer).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
 

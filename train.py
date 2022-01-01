@@ -38,6 +38,7 @@ class Workspace:
         print(f'workspace: {self.work_dir}')
 
         self.cfg = cfg
+        self.save_at = cfg.save_at
         utils.set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
         self.setup()
@@ -165,6 +166,12 @@ class Workspace:
                 episode_step = 0
                 episode_reward = 0
 
+                # try to save snapshot
+                if self.cfg.save_snapshot and len(self.save_at) > 0 and self.save_at[0] <= self.global_frame:
+                    self.save_at.pop(0)
+                    self.save_snapshot()
+
+
             # try to evaluate
             if eval_every_step(self.global_step):
                 self.logger.log('eval_total_time', self.timer.total_time(),
@@ -191,11 +198,12 @@ class Workspace:
             self._global_step += 1
 
     def save_snapshot(self):
-        snapshot = self.work_dir / 'snapshot.pt'
+        snapshot = self.work_dir / 'snapshot_{}.pt'.format(self._global_step)
         keys_to_save = ['agent', 'timer', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f)
+
 
     def load_snapshot(self):
         snapshot = self.work_dir / 'snapshot.pt'
